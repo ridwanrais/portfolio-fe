@@ -11,7 +11,6 @@ export interface CaseStudy {
   challenges: string[];
   scalingConsiderations: string;
   failureScenarios: string[];
-  futureImprovements: string[];
   impact: string;
   databaseDesign: string;
   codeSnippet: {
@@ -44,7 +43,7 @@ export const caseStudies: CaseStudy[] = [
                           v
                    [ PostgreSQL DB ] (State & Metrics)
     `,
-    techStack: ["Go", "Redis Streams", "PostgreSQL", "Docker", "AWS ECS", "KEDA"],
+    techStack: ["Go", "Redis Streams", "PostgreSQL", "Docker", "GCP Cloud Run", "KEDA"],
     keyDecisions: [
       "Chose Redis Streams over SQS or Kafka because of the requirement for sub-millisecond latency, built-in consumer group support, and operational simplicity (we already heavily used Redis).",
       "Implemented a custom dead-letter queue (DLQ) with an exponential backoff jitter strategy for transient failure recovery.",
@@ -63,10 +62,6 @@ export const caseStudies: CaseStudy[] = [
       "Worker OOM or Crash: Redis consumer group 'pending' entries will inevitably timeout. A background sweeper routine periodically reclaims these stuck jobs using XCLAIM and reassigns them.",
       "Redis Network Partition: Ingest API buffers locally up to 50MB before rejecting requests with 429 Too Many Requests to ensure no silent data dropping.",
       "Database High Latency: Workers implement circuit breakers for DB writes. If the DB is slow, workers pause dequeuing rather than crashing."
-    ],
-    futureImprovements: [
-      "Migrate historical long-term job metadata from PostgreSQL to a cheaper cold storage like S3/Athena for analytics.",
-      "Implement predictive scaling models using historical traffic patterns instead of purely reactive lag-based scaling."
     ],
     impact: "Reduced median job execution latency by 92% and completely eliminated the cron backlog. The system scaled flawlessly to 15,000+ jobs/second during the Black Friday peak without needing any manual intervention or scaling.",
     databaseDesign: "PostgreSQL acts as the persistent truth for job lifecycle states (Queued, Processing, Completed, Failed). We utilize a partitioned table strategy based on the 'created_at' timestamp to keep index sizes manageable. We extensively use JSONB columns for flexible job payload storage without requiring schema migrations per job type.",
@@ -108,71 +103,81 @@ export const caseStudies: CaseStudy[] = [
     }
   },
   {
-    slug: "realtime-collaboration-api",
-    title: "Real-time Collaboration Engine",
-    shortDescription: "Constructed a WebSockets-based synchronization kernel powering a highly concurrent collaborative document editor.",
-    problem: "Our flagship product required a Google Docs-style rich text editor. Initial implementations using Operational Transformation (OT) were brittle—users were experiencing cursor desyncs, 'ghost edits', and fatal conflicted states when typing from slow cellular networks.",
-    architecture: "Instead of OT, we pivoted to Conflict-free Replicated Data Types (CRDTs). We built a Node.js WebSocket backend that orchestrates document state via Yjs. Because WebSockets dictate stateful connections, we utilized a Redis Pub/Sub mesh to broadcast state deltas across horizontally scaled container instances. Document snapshots are asynchronously compacted and saved to MongoDB.",
+    slug: "secure-payment-gateway",
+    title: "Self-Hosted Payment Gateway (PCI DSS & GDPR)",
+    shortDescription: "Architected a highly secure, self-hosted payment orchestrator to maintain data sovereignty and multi-processor routing.",
+    problem: "Initially, our platform was entirely dependent on Stripe, which offered limited merchant support outside of Western markets. This prevented us from expanding into high-growth regions like Indonesia where Stripe's local acceptance was poor. To scale globally, we needed to move away from vendor-specific hosted fields and implement our own orchestration layer that could route to multiple local PSPs (like Xendit) while maintaining a single, secure source of truth for card data.",
+    architecture: "The solution was built around a centralized, self-hosted Card Vault that tokenizes cardholder data independently of any specific payment provider. This architectural decoupling allows us to 'vault once' and then dynamically route transactions to the most effective local processor—routing Indonesian payments through Xendit's rails while maintaining Stripe for Western transactions—all without the customer ever re-entering their data or the platform's core databases ever seeing a raw PAN.",
     architectureDiagram: `
-       [ Client A ]      [ Client B ]      [ Client C ]
-            |                 |                 |
-     (WebSockets)      (WebSockets)      (WebSockets)
-            |                 |                 |
-     [ Node WS 1 ]     [ Node WS 2 ]     [ Node WS 1 ]
-            |                 |                 |
-            +-------+---------+--------+--------+
-                    |                  |
-            [ Redis Pub/Sub ]   [ MongoDB (Snapshots) ]
+     [ Client Devices ] ---> (PCI Scope)
+             |
+             v
+    [ API Gateway (WAF) ]
+             |
+             v
+   [ Chi Backend Core ]  --> [ Payment Orchestrator ]
+             |                      |
+             v                      v
+   [ Encryption Svc ]      [ Card Vault (Rust) ]
+          (Rust)                    |
+                                    v
+                           [ Isolated Vault DB ]
     `,
-    techStack: ["Node.js", "WebSockets", "Yjs (CRDT)", "MongoDB", "Redis Pub/Sub", "Prometheus"],
+    techStack: ["Node.js (NestJS)", "Rust", "Payment Orchestration", "PostgreSQL", "Redis", "GCP KMS"],
     keyDecisions: [
-      "Chose Yjs and CRDTs over Operational Transformation (OT) to eliminate the need for a central, strictly ordered resolution server. It allows true peer-to-peer eventual consistency.",
-      "Utilized Redis Pub/Sub to sync document state changes across cluster nodes so clients connecting to different containers still see each other's cursor movements in real-time.",
-      "Separated the real-time ephemeral sync layer from the persistent storage layer. MongoDB only handles compacted document snapshots, saving heavy write ops."
+      "Opted to self-host the orchestration layer's Card Vault within a physically isolated VPC subnet with zero outbound internet access, minimizing the blast radius of any potential compromise.",
+      "Integrated a Rust-built Encryption Service utilizing AES-256-GCM via GCP KMS keys to proactively encrypt PII payloads. I personally contributed to the Hyperswitch open-source ecosystem by implementing the GCP KMS encryption provider.",
+      "Expanded the orchestrator's capability to support local Southeast Asian markets; I authored and upstreamed the Xendit payment processor integration to the core routing engine.",
+      "Used a strictly decoupled multi-database pattern. The primary operational DB stores only opaque transaction references, while the secure Vault DB handles cryptographic PAN mappings."
     ],
     tradeoffs: [
-      "CRDT metadata progressively increases the document payload size compared to standard plaintext. We mitigated this by requiring clients to periodically perform garbage collection and snapshot compaction.",
-      "Node.js was chosen for its excellent async I/O handling with WebSockets, trading off the CPU raw performance we might have had with Rust or Go."
+      "Shouldered the immense compliance burden of an in-house PCI DSS Level 1 audit instead of delegating entirely to Stripe Elements, forcing strict CI/CD and infrastructural auditing.",
+      "Increased local developmental friction. Replicating the production environment requires developers to run 5 heavy services (Vault, Router, Encryption, multiple DBs) locally."
     ],
     challenges: [
-      "Handling WebSocket connection drops on mobile devices seamlessly. We implemented a robust reconnection synchronization protocol that requests only Missed State Vectors instead of the full document upon reconnect.",
-      "Memory bloat on Node servers when keeping thousands of Yjs documents in memory. Solved via an LRU cache implementation that unloads dormant documents to MongoDB."
+      "Ensuring exactly-once payment execution. We implemented a unified idempotency layer that protects users from being double-charged during network jitters or upstream PSP timeouts, regardless of which local processor the payment is routed to.",
+      "Proactive PII/Card data leakage prevention. We architected a high-performance regex-based middleware that proactively sanitizes all outgoing logs across the distributed system, preventing sensitive data from ever reaching our ELK stack.",
+      "Latency budgets: Routing, encrypting, tokenizing, and communicating with upstream PSPs had to execute under 1000ms to prevent checkout abandonment."
     ],
-    scalingConsiderations: "The WebSocket servers are stateless regarding the single source of truth—they can be horizontally scaled infinitely behind an ALB. The primary bottleneck becomes the Redis Pub/Sub fanout. For extreme scale, we plan to partition Redis channels by document ID hashes.",
+    scalingConsiderations: "The stateless encryption and routing tier scales horizontally on Kubernetes based solely on CPU metrics. The Card Vault relies on heavily tuned PgBouncer instances for multiplexed connection pooling to PostgreSQL to handle high concurrent token exchanges during sales spikes.",
     failureScenarios: [
-      "Redis Failure: If Pub/Sub goes down, cross-container sync stops. The load balancer is configured with sticky sessions to temporarily keep users of the same doc on the same container to mitigate impact.",
-      "MongoDB Outage: The in-memory Yjs documents act as a buffer. The system can survive DB downtime by queueing snapshots locally until the DB recovers, provided it doesn't OOM.",
-      "Network Partition: The beauty of CRDTs is that disconnected clients can continue editing locally. Upon network restore, their local changes will deterministically merge without conflict."
+      "Vault DB Failure: Automatic failover to a synchronous Hot Standby replica within 5 seconds. Checkout API handlers employ exponential backoff if they receive 503s.",
+      "Encryption Service Down: PII-sensitive endpoints immediately hard-fail, rejecting new payment methods to strictly avoid writing unencrypted data to temporary memory or logs.",
+      "Upstream PSP Outage: The payment router utilizes volume-based circuit breakers. If Stripe errors consistently, traffic is instantly redistributed to Adyen or Braintree."
     ],
-    futureImprovements: [
-      "Implement a Rust-powered WebAssembly client to speed up local CRDT resolution for massive documents.",
-      "Move the Redis Pub/Sub mesh to a more robust message bus like NATS JetStream for reliable delivery guarantees."
-    ],
-    impact: "Successfully scaled to support over 10,000 concurrent editing sessions and up to 100 simultaneous users in a single document with zero perceived latency. Eliminated conflict resolution support tickets entirely.",
-    databaseDesign: "MongoDB is used as a document store. The schema simply pairs a specific 'documentId' with an opaque binary blob (Uint8Array) representing the compacted Yjs state. This avoids mapping rich text to complex relational tables, moving all merging logic out of the database and into the application layer.",
+    impact: "Successfully diverted 100% of payment volume across multiple processors, achieving full self-hosted PCI DSS compliance and reducing vendor fees.",
+    databaseDesign: "The main operational database structure is agnostic to payment info. A completely air-gapped PostgreSQL instance is tightly bound to the Card Vault. PANs are encrypted at rest. We utilize deterministic AES encryption so that Card Fingerprints can be queried to prevent duplicate card additions without decrypting the payload.",
     codeSnippet: {
       language: "typescript",
-      title: "Broadcasting CRDT deltas across the Redis mesh",
-      code: `import * as Y from 'yjs';
-import { Redis } from 'ioredis';
+      title: "Executing secure payment routing via orchestrator SDK",
+      code: `import { Injectable } from '@nestjs/common';
+import { PaymentOrchestratorClient } from '@payments/api';
+import { EncryptionService } from './encryption.service';
 
-class DocumentRoom {
-  private ydoc = new Y.Doc();
-  
-  constructor(private docId: string, private redis: Redis) {
-    // Subscribe to updates from other instances
-    this.redis.subscribe(\`doc:\${docId}\`);
-    this.redis.on('message', (channel, message) => {
-      // Apply remote deltas deterministically
-      const update = Buffer.from(message, 'base64');
-      Y.applyUpdate(this.ydoc, update);
-    });
+@Injectable()
+export class PaymentService {
+  constructor(
+    private orchestrator: PaymentOrchestratorClient,
+    private encryptionSvc: EncryptionService
+  ) {}
+
+  async processPayment(orderId: string, customerData: SensitiveData) {
+    // 1. Encrypt PII before it hits any DB or external logging
+    const encryptedCustomer = await this.encryptionSvc.encrypt(customerData);
     
-    // Broadcast local changes to the Redis mesh
-    this.ydoc.on('update', (update: Uint8Array) => {
-      const base64Update = Buffer.from(update).toString('base64');
-      this.redis.publish(\`doc:\${docId}\`, base64Update);
+    // 2. Instruct orchestrator to vault and route the payment
+    const paymentIntent = await this.orchestrator.payments.create({
+      amount: 15000, 
+      currency: 'USD',
+      customer_id: encryptedCustomer.referenceId,
+      routing_algorithm: {
+        type: "cost_optimized",
+        fallback: ["stripe", "braintree"]
+      },
+      capture_method: "automatic"
     });
+
+    return paymentIntent.client_secret;
   }
 }`
     }

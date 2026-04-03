@@ -175,19 +175,7 @@ export default async function CaseStudyPage({
           </div>
         </section>
 
-        <section>
-          <h2 className="text-xl font-bold mb-4 tracking-tight flex items-center gap-2">
-            <span className="text-[var(--muted-foreground)] opacity-50">09.</span>
-            Future Improvements
-          </h2>
-          <ul className="space-y-3 pl-6 mb-8">
-            {study.futureImprovements.map((improvement, i) => (
-              <li key={i} className="text-[var(--muted-foreground)] list-disc leading-relaxed">
-                {improvement}
-              </li>
-            ))}
-          </ul>
-        </section>
+
 
         <section>
           <div className="rounded-xl bg-[var(--primary)]/5 border border-[var(--primary)]/10 p-6 sm:p-8 mt-12">

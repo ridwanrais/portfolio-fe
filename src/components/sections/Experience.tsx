@@ -14,7 +14,7 @@ export function Experience() {
       company: 'Enterprise SaaS Provider',
       period: '2020 - 2023',
       description: 'Optimized legacy database queries resulting in a 40% reduction in average API latency. Built real-time synchronization services for offline-first mobile clients.',
-      skills: ['Node.js', 'Typescript', 'Redis', 'AWS']
+      skills: ['Node.js', 'Typescript', 'Redis', 'GCP']
     }
   ];
 
