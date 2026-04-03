@@ -3,18 +3,39 @@ import { Badge } from '@/components/ui/Badge';
 export function Experience() {
   const experiences = [
     {
-      role: 'Senior Backend Engineer',
-      company: 'High-growth Fintech Startup',
-      period: '2023 - Present',
-      description: 'Led the migration of a monolithic payment processing system to a microservices architecture. Designed idempotent APIs ensuring robust transaction handling under high concurrency.',
-      skills: ['Go', 'PostgreSQL', 'Kafka', 'Kubernetes']
+      role: 'Back End Developer',
+      company: 'EventCHI',
+      period: 'Sep 2024 - Present',
+      description: 'Engineering high-performance, PCI-compliant payment orchestration systems. Implementing secure data encryption flows using GCP KMS and contributing to the global open-source payment ecosystem (Hyperswitch). Architects scalable backend services using Rust and TypeScript.',
+      skills: ['Rust', 'TypeScript', 'GCP KMS', 'NestJS', 'PostgreSQL', 'Kafka']
     },
     {
-      role: 'Fullstack Engineer',
-      company: 'Enterprise SaaS Provider',
-      period: '2020 - 2023',
-      description: 'Optimized legacy database queries resulting in a 40% reduction in average API latency. Built real-time synchronization services for offline-first mobile clients.',
-      skills: ['Node.js', 'Typescript', 'Redis', 'GCP']
+      role: 'Full-stack Developer',
+      company: 'Moladin',
+      period: 'Jan 2024 - Sep 2024',
+      description: 'Built and optimized core fintech API services for a major automotive platform. Scaled internal dealer-facing tools and financial processing engines using NestJS and unified TypeScript architecture.',
+      skills: ['Node.js', 'Express.js', 'TypeScript', 'NestJS', 'MongoDB', 'Redis']
+    },
+    {
+      role: 'Back End Developer',
+      company: 'Moka',
+      period: 'Apr 2023 - Dec 2023',
+      description: 'Developed critical backend integrations for the business workflow automation suite. Leveraged Yellow AI and PandaDoc for real-time document processing and AI-driven automated communication flows.',
+      skills: ['Node.js', 'Express.js', 'Yellow AI', 'PandaDoc', 'API Design']
+    },
+    {
+      role: 'Software Engineer',
+      company: 'OKANEMO',
+      period: 'Nov 2022 - Mar 2023',
+      description: 'Engineered backend components for a fintech solution, focusing on reliable data ingestion and API infrastructure consistency.',
+      skills: ['Node.js', 'PostgreSQL', 'Microservices']
+    },
+    {
+      role: 'Software Engineer',
+      company: 'Refactory',
+      period: 'Jul 2022 - Oct 2022',
+      description: 'Delivered industrial-grade software components through rigorous backend engineering and system integration tasks.',
+      skills: ['Software Engineering', 'System Integration']
     }
   ];
 

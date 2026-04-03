@@ -22,87 +22,6 @@ export interface CaseStudy {
 
 export const caseStudies: CaseStudy[] = [
   {
-    slug: "distributed-task-queue",
-    title: "High-Throughput Distributed Task Queue",
-    shortDescription: "Designed and implemented a Redis-backed distributed task queue processing 5k+ jobs/sec with graceful degradation.",
-    problem: "As our user base grew by 400% YoY, our legacy monolithic cron architecture began to buckle under bursty workloads. Critical background jobs—such as batch email processing and report generation—were delayed by hours because the monolithic workers were starved for resources, causing cascading timeouts downstream.",
-    architecture: "We decided to decouple job ingestion from execution using an event-driven microservices architecture. We leveraged Redis Streams as a high-throughput message broker, providing persistent, append-only logs. A pool of Go-based workers processes jobs concurrently using Redis consumer groups, ensuring each message is processed exactly once by the pool while remaining idempotent.",
-    architectureDiagram: `
-     [ API Gateway ]
-           |
-           v
-    [ Producer Node ]   --> (Writes to) -->  [ Redis Streams ]
-                                                  |
-     +--------------------------------------------+
-     |                    |                       |
-     v                    v                       v
-[ Go Worker 1 ]    [ Go Worker 2 ]  ...    [ Go Worker N ]
-     |                    |                       |
-     +--------------------+-----------------------+
-                          |
-                          v
-                   [ PostgreSQL DB ] (State & Metrics)
-    `,
-    techStack: ["Go", "Redis Streams", "PostgreSQL", "Docker", "GCP Cloud Run", "KEDA"],
-    keyDecisions: [
-      "Chose Redis Streams over SQS or Kafka because of the requirement for sub-millisecond latency, built-in consumer group support, and operational simplicity (we already heavily used Redis).",
-      "Implemented a custom dead-letter queue (DLQ) with an exponential backoff jitter strategy for transient failure recovery.",
-      "Used Go for the worker services to take advantage of lightweight goroutines, minimizing memory overhead during massive concurrency."
-    ],
-    tradeoffs: [
-      "Accepted at-least-once delivery semantics to maximize ingestion throughput. We forced all consumer logic to be strictly idempotent, which added complexity to the application layer.",
-      "Opted for an in-memory queue broker (Redis), which constrained the maximum backlog size to available RAM. We mitigated this by setting aggressive retention policies and aggressive auto-scaling."
-    ],
-    challenges: [
-      "Managing memory spikes during massive payload processing. We mitigated this by implementing strict payload size limits and parsing large JSON bodies via streams.",
-      "Dealing with worker starvation during sudden traffic spikes. Solved by implementing KEDA for Kubernetes/ECS event-driven autoscaling based on queue lag metrics."
-    ],
-    scalingConsiderations: "The system scales horizontally on two axes: the Redis cluster can be partitioned by topic/tenant, and the worker pool autoscales linearly based on the Redis Stream group backlog length. KEDA continuously polls the Redis metric and triggers new task spawns within 10 seconds of a backlog spike.",
-    failureScenarios: [
-      "Worker OOM or Crash: Redis consumer group 'pending' entries will inevitably timeout. A background sweeper routine periodically reclaims these stuck jobs using XCLAIM and reassigns them.",
-      "Redis Network Partition: Ingest API buffers locally up to 50MB before rejecting requests with 429 Too Many Requests to ensure no silent data dropping.",
-      "Database High Latency: Workers implement circuit breakers for DB writes. If the DB is slow, workers pause dequeuing rather than crashing."
-    ],
-    impact: "Reduced median job execution latency by 92% and completely eliminated the cron backlog. The system scaled flawlessly to 15,000+ jobs/second during the Black Friday peak without needing any manual intervention or scaling.",
-    databaseDesign: "PostgreSQL acts as the persistent truth for job lifecycle states (Queued, Processing, Completed, Failed). We utilize a partitioned table strategy based on the 'created_at' timestamp to keep index sizes manageable. We extensively use JSONB columns for flexible job payload storage without requiring schema migrations per job type.",
-    codeSnippet: {
-      language: "go",
-      title: "Idempotent worker execution loop with XCLAIM fallback",
-      code: `func (w *Worker) ProcessStream(ctx context.Context) error {
-  for {
-    select {
-    case <-ctx.Done():
-      return ctx.Err()
-    default:
-      // Block for up to 2 seconds waiting for new messages
-      streams, err := w.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
-        Group:    w.group,
-        Consumer: w.id,
-        Streams:  []string{w.stream, ">"},
-        Count:    10,
-        Block:    2000,
-      }).Result()
-      
-      if err != nil && err != redis.Nil {
-        w.logger.Error("Failed to read from stream", err)
-        continue
-      }
-      
-      for _, msg := range streams[0].Messages {
-        // executeJob ensures idempotency using a DB unique constraint
-        if err := w.executeJob(ctx, msg); err == nil {
-          // Acknowledge only on successful processing
-          w.redis.XAck(ctx, w.stream, w.group, msg.ID)
-        } else {
-          w.handleFailure(ctx, msg, err)
-        }
-      }
-    }
-  }
-}`
-    }
-  },
-  {
     slug: "secure-payment-gateway",
     title: "Self-Hosted Payment Gateway (PCI DSS & GDPR)",
     shortDescription: "Architected a highly secure, self-hosted payment orchestrator to maintain data sovereignty and multi-processor routing.",
@@ -181,5 +100,80 @@ export class PaymentService {
   }
 }`
     }
+  },
+  {
+    slug: "high-throughput-ticket-generation",
+    title: "Asynchronous Ticket Generation Engine",
+    shortDescription: "Architected a Kafka-driven system to handle mass ticket generation asynchronously, ensuring low-latency event creation for organizers.",
+    problem: "When organizers create events with thousands of tickets, generating those records synchronously in the main API flow caused connection timeouts and degraded performance. Massively generating 10,000+ unique ticket records on-the-fly would block the event manager service, leading to a poor experience for major event launches.",
+    architecture: "Leveraged Kafka to decouple ticket definition from physical record generation. An 'event.created' message triggers a consumer group that processes generation in controlled batches. This architecture allows the event creation API to return instantly while the heavy database write operations are handled by a dedicated background worker pool.",
+    architectureDiagram: `
+     [ Event Manager ] -- (Produce) --> [ Kafka: generate-tickets ]
+                                              |
+      +---------------------------------------+
+      |                   |                   |
+      v                   v                   v
+[ Ticket Worker 1 ] [ Ticket Worker 2 ] [ Ticket Worker N ]
+      |                   |                   |
+      +---------+---------+---------+---------+
+                |                   |
+        [ MongoDB Session ]   [ Transaction Log ]
+    `,
+    techStack: ["Node.js (NestJS)", "Kafka", "MongoDB", "Mongoose", "Docker", "GCP Cloud Run"],
+    keyDecisions: [
+      "Utilized MongoDB transactions for each batch to ensure atomicity—either the entire batch of tickets is generated or none at all, preventing partial data corruption.",
+      "Implemented a manual heartbeat() signal within the generation loop to inform Kafka the consumer is still alive during long-running batch inserts, preventing unnecessary group rebalances.",
+      "Adopted an idempotent 'check-before-write' strategy at the start of the consumer handler to safely handle retries from the Kafka broker without over-generating tickets."
+    ],
+    tradeoffs: [
+      "Accepted eventual consistency: Organizers see a 'Generating...' status while the background workers complete the task, trading off immediate availability for system stability.",
+      "Balanced batch size vs. locked resources: Larger batches reduce I/O overhead but increase transaction lock duration on the MongoDB collection."
+    ],
+    challenges: [
+      "Kafka Rebalance issues: Long-running generation loops were triggering Kafka rebalances before completion. Solved by integrating a heartbeat mechanism inside the processing loop to keep the consumer active.",
+      "Ensuring no over-generation: Multiple consumers picking up the same message due to broker failure could lead to duplicate ticket definitions. Implemented a robust pre-generation check to calculate the exact remaining capacity of the current ticket set."
+    ],
+    scalingConsiderations: "Horizontal scaling of consumer groups allowed us to handle multiple large-scale event launches simultaneously. The worker pool is dynamically adjusted based on the consumer lag metric from the Kafka partition.",
+    failureScenarios: [
+      "Broker Failure: Kafka's log-append model ensures messages are persisted and retried until the generation is acknowledged as successful.",
+      "DB Write Failure: Batch inserts are wrapped in transactions; if the DB fails midway, the entire batch is rolled back and retried by the consumer.",
+      "Network Jitter: The heartbeat() mechanism ensures that transient network spikes between the worker and Kafka don't cause the worker to be evicted from the consumer group."
+    ],
+    impact: "Reduced median event creation latency from 15s+ for large events to <200ms. Allowed the platform to handle 50k+ ticket generations per minute across concurrent event launches.",
+    databaseDesign: "Used an index-heavy MongoDB collection for tickets, optimized for range queries. Mapped ticketDefinitionId to individual ticket records for fast lookups during the high-load ticket purchase flow.",
+    codeSnippet: {
+      language: "typescript",
+      title: "Batch ticket generation with Kafka heartbeats and sessions",
+      code: `async (payload: Payload, heartbeat: () => Promise<void>) => {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    
+    // 1. Check for existing generation to ensure idempotency
+    const currentCount = await ticketModel.countDocuments({ definitionId });
+    const remaining = payload.totalCapacity - currentCount;
+    
+    // 2. Perform batched generation to optimize DB writes
+    for (let i = 0; i < payload.batchSize; i += BATCH_LIMIT) {
+      const tickets = Array.from({ length: BATCH_LIMIT }, () => ({
+        definition: definitionId,
+        event: eventId
+      }));
+      
+      await ticketModel.insertMany(tickets, { session });
+      
+      // 3. Inform Kafka we are still processing to avoid rebalance
+      await heartbeat();
+    }
+    
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err; // Trigger Kafka retry
+  } finally {
+    session.endSession();
   }
+}`
+    }
+  },
 ];

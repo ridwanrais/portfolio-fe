@@ -43,6 +43,14 @@ export function Navbar() {
               </Link>
             </>
           )}
+          <a
+            href="https://www.linkedin.com/in/ridwan-rais-firdaus-5a53a9193/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            LinkedIn
+          </a>
           <button
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border)] bg-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"

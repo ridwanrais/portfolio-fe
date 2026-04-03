@@ -4,10 +4,13 @@ export function About() {
       <h2 className="text-2xl font-bold mb-6 text-[var(--foreground)] tracking-tight">About</h2>
       <div className="text-[var(--muted-foreground)] leading-relaxed space-y-4 max-w-3xl">
         <p>
-          I specialize in distributed systems, API design, and cloud infrastructure. With a strong foundation in backend architecture, I aim to build resilient applications that scale horizontally.
+          I build backend systems that are designed to survive real-world load—failures, spikes, and everything in between.
         </p>
         <p>
-          My experience revolves around performance optimization, ensuring high availability, and writing clean, maintainable code. Whether it's designing highly concurrent worker pools or real-time event-driven services, my focus is on solving complex engineering problems through system design.
+          I focus on distributed, event-driven architectures (Kafka, AWS, Terraform), with experience in fintech and payment systems.
+        </p>
+        <p>
+          I care about systems that are simple, reliable, and predictable in production.
         </p>
       </div>
     </section>
