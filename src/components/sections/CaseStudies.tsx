@@ -36,20 +36,19 @@ export function CaseStudies() {
       
       {/* Optional Projects / Coming Soon */}
       <h3 className="text-lg font-semibold mt-16 mb-6 text-[var(--foreground)] opacity-70">Coming Soon / Projects</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div className="rounded-xl border border-[var(--border)] border-dashed bg-transparent p-6 flex flex-col items-start justify-center">
-          <h4 className="font-semibold mb-2">Distributed Lock Manager</h4>
+          <h4 className="font-semibold mb-2">Receipt Scanner & OCR Pipeline</h4>
           <span className="text-sm font-mono text-[var(--muted-foreground)] mb-4">Live demo coming soon</span>
-          <a href="#" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
-            GitHub Repository
-          </a>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] border-dashed bg-transparent p-6 flex flex-col items-start justify-center">
-          <h4 className="font-semibold mb-2">Kubernetes Operator</h4>
-          <span className="text-sm font-mono text-[var(--muted-foreground)] mb-4">Live demo coming soon</span>
-          <a href="#" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
-            GitHub Repository
-          </a>
+          <span className="text-sm text-[var(--muted-foreground)] mb-4">A complete pipeline for receipt scanning using custom MLX-based OCR and a full-stack backend management system.</span>
+          <div className="flex flex-wrap gap-4">
+            <a href="https://github.com/ridwanrais/receipt-scanner-be" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
+              Backend Repository
+            </a>
+            <a href="https://github.com/ridwanrais/receipt-ocr-mlx" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
+              OCR MLX Repository
+            </a>
+          </div>
         </div>
       </div>
     </section>

@@ -7,7 +7,7 @@ export function About() {
           I build backend systems that are designed to survive real-world load—failures, spikes, and everything in between.
         </p>
         <p>
-          I focus on distributed, event-driven architectures (Kafka, AWS, Terraform), with experience in fintech and payment systems.
+          I focus on distributed, event-driven architectures (Kafka, AWS, Terraform), with experience spanning fintech, payment systems, and integrating AI models into practical applications.
         </p>
         <p>
           I care about systems that are simple, reliable, and predictable in production.
