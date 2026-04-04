@@ -10,18 +10,18 @@ export function Contact() {
       </p>
       <div className="flex flex-wrap justify-center items-center gap-4">
         <Button asChild variant="primary">
-          <a href="mailto:hello@example.com">
+          <a href="mailto:ridwan.rais2@gmail.com">
             <Mail className="w-4 h-4 mr-2" />
             Email Me
           </a>
         </Button>
         <Button asChild variant="outline">
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/ridwanrais" target="_blank" rel="noopener noreferrer">
             GitHub
           </a>
         </Button>
         <Button asChild variant="outline">
-          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.linkedin.com/in/ridwan-rais-firdaus-5a53a9193/" target="_blank" rel="noopener noreferrer">
             LinkedIn
           </a>
         </Button>
