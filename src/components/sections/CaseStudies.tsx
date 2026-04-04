@@ -48,6 +48,9 @@ export function CaseStudies() {
             <a href="https://github.com/ridwanrais/receipt-ocr-mlx" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
               OCR MLX Repository
             </a>
+            <a href="https://github.com/ridwanrais/receipt-scanner-app" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
+              Frontend Repository
+            </a>
           </div>
         </div>
       </div>
