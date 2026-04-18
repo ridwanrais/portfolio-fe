@@ -18,7 +18,7 @@ export function Experience() {
     },
     {
       role: 'Back End Developer',
-      company: 'Moka',
+      company: 'Moladin',
       period: 'Apr 2023 - Dec 2023',
       description: 'Developed critical backend integrations for the business workflow automation suite. Leveraged Yellow AI and PandaDoc for real-time document processing and AI-driven automated communication flows.',
       skills: ['Node.js', 'Express.js', 'Yellow AI', 'PandaDoc', 'API Design']
