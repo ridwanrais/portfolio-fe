@@ -9,8 +9,8 @@ export function CaseStudies() {
       <h2 className="text-2xl font-bold mb-8 text-[var(--foreground)] tracking-tight">System Architecture / Case Studies</h2>
       <div className="grid gap-6">
         {caseStudies.map((study) => (
-          <Link 
-            key={study.slug} 
+          <Link
+            key={study.slug}
             href={`/case-studies/${study.slug}`}
             className="group block rounded-xl border border-[var(--border)] bg-[var(--background)] p-6 transition-all hover:border-[var(--muted-foreground)]/50 hover:bg-[var(--muted)]/30"
           >
@@ -33,23 +33,23 @@ export function CaseStudies() {
           </Link>
         ))}
       </div>
-      
+
       {/* Optional Projects / Coming Soon */}
-      <h3 className="text-lg font-semibold mt-16 mb-6 text-[var(--foreground)] opacity-70">Coming Soon / Projects</h3>
+      <h3 className="text-lg font-semibold mt-16 mb-6 text-[var(--foreground)] opacity-70">Projects</h3>
       <div className="grid grid-cols-1 gap-4">
         <div className="rounded-xl border border-[var(--border)] border-dashed bg-transparent p-6 flex flex-col items-start justify-center">
           <h4 className="font-semibold mb-2">Receipt Scanner & OCR Pipeline</h4>
-          <span className="text-sm font-mono text-[var(--muted-foreground)] mb-4">Live demo coming soon</span>
-          <span className="text-sm text-[var(--muted-foreground)] mb-4">A complete pipeline for receipt scanning using custom MLX-based OCR and a full-stack backend management system.</span>
+          <a href="https://receipt-scanner.ridwan-dev.com" target="_blank" rel="noopener noreferrer" className="text-sm font-mono text-[var(--foreground)] mb-4 hover:text-[var(--primary)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">Live Demo</a>
+          <span className="text-sm text-[var(--muted-foreground)] mb-4">A receipt scanning pipeline powered by an open-source Qwen model (also supports custom MLX OCR). Features analytical dashboards and historical scan tracking to help users gather deeper insights from their spending receipts.</span>
           <div className="flex flex-wrap gap-4">
             <a href="https://github.com/ridwanrais/receipt-scanner-be" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
               Backend Repository
             </a>
-            <a href="https://github.com/ridwanrais/receipt-ocr-mlx" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
-              OCR MLX Repository
-            </a>
             <a href="https://github.com/ridwanrais/receipt-scanner-app" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
               Frontend Repository
+            </a>
+            <a href="https://github.com/ridwanrais/receipt-ocr-mlx" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors underline underline-offset-4 decoration-[var(--border)] hover:decoration-current">
+              OCR MLX Repository
             </a>
           </div>
         </div>
