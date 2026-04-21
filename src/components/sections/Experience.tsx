@@ -3,9 +3,16 @@ import { Badge } from '@/components/ui/Badge';
 export function Experience() {
   const experiences = [
     {
+      role: 'Senior Backend Developer',
+      company: 'Cigro',
+      period: 'Aug 2025 - Present',
+      description: 'Leading backend development for diverse client projects in the software outsourcing division. Key deliveries include scalable hiking and dating platforms, internal branch order aggregators, and AI-driven generative travel worksheet systems for children.',
+      skills: ['TypeScript', 'Node.js', 'NestJS', 'PostgreSQL', 'AI Integration']
+    },
+    {
       role: 'Back End Developer',
       company: 'EventCHI',
-      period: 'Sep 2024 - Present',
+      period: 'Sep 2024 - Aug 2025',
       description: 'Engineering high-performance, PCI-compliant payment orchestration systems. Implementing secure data encryption flows using GCP KMS and contributing to the global open-source payment ecosystem (Hyperswitch). Architects scalable backend services using Rust and TypeScript.',
       skills: ['Rust', 'TypeScript', 'GCP KMS', 'NestJS', 'PostgreSQL', 'Kafka']
     },
