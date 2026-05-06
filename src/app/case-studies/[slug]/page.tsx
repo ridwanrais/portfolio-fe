@@ -221,3 +221,9 @@ export default async function CaseStudyPage({
     </article>
   );
 }
+
+export async function generateStaticParams() {
+  return caseStudies.map((study) => ({
+    slug: study.slug,
+  }));
+}
