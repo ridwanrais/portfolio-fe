@@ -8,7 +8,7 @@ export function Hero() {
         Ridwan Rais Firdaus
       </h1>
       <p className="text-lg text-[var(--muted-foreground)] max-w-2xl mb-8 leading-relaxed">
-        Backend Engineer Specializing in High-Performance & Secure Systems
+        Software Engineer Specializing in High-Performance & Secure Systems
       </p>
       <div className="flex items-center gap-4">
         <Button asChild variant="primary">
@@ -26,7 +26,7 @@ export function Hero() {
         </div>
         <div className="space-y-1.5">
           <h3 className="font-medium text-[var(--foreground)] text-sm uppercase tracking-wider opacity-80">Core Stack</h3>
-          <p className="text-[var(--muted-foreground)] font-mono text-sm leading-relaxed">Go, Node.js, TS, PostgreSQL</p>
+          <p className="text-[var(--muted-foreground)] font-mono text-sm leading-relaxed">Go, Node.js, Rust, Next.js</p>
         </div>
         <div className="space-y-1.5">
           <h3 className="font-medium text-[var(--foreground)] text-sm uppercase tracking-wider opacity-80">Key Strengths</h3>

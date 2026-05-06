@@ -1,4 +1,7 @@
+"use client";
+
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { caseStudies } from '@/data/case-studies';
 import { Badge } from '@/components/ui/Badge';
 import { ArrowRight } from 'lucide-react';
@@ -8,29 +11,38 @@ export function CaseStudies() {
     <section id="case-studies" className="py-20 px-6 max-w-4xl mx-auto scroll-m-16 border-t border-[var(--border)]">
       <h2 className="text-2xl font-bold mb-8 text-[var(--foreground)] tracking-tight">System Architecture / Case Studies</h2>
       <div className="grid gap-6">
-        {caseStudies.map((study) => (
-          <Link
+        {caseStudies.map((study, index) => (
+          <motion.div
             key={study.slug}
-            href={`/case-studies/${study.slug}`}
-            className="group block rounded-xl border border-[var(--border)] bg-[var(--background)] p-6 transition-all hover:border-[var(--muted-foreground)]/50 hover:bg-[var(--muted)]/30"
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * 0.05, duration: 0.3 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            whileTap={{ scale: 0.98 }}
           >
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="space-y-3">
-                <h3 className="text-xl font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors inline-flex items-center gap-2">
-                  {study.title}
-                  <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
-                </h3>
-                <p className="text-[var(--muted-foreground)] leading-relaxed max-w-2xl">
-                  {study.shortDescription}
-                </p>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {study.techStack.map(tech => (
-                    <Badge key={tech}>{tech}</Badge>
-                  ))}
+            <Link
+              href={`/case-studies/${study.slug}`}
+              className="group block rounded-xl border border-[var(--border)] bg-[var(--background)] p-6 transition-all hover:border-[var(--muted-foreground)]/50 hover:bg-[var(--muted)]/30 shadow-sm hover:shadow-md"
+            >
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-bold text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors inline-flex items-center gap-2">
+                    {study.title}
+                    <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all" />
+                  </h3>
+                  <p className="text-[var(--muted-foreground)] leading-relaxed max-w-2xl">
+                    {study.shortDescription}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {study.techStack.map(tech => (
+                      <Badge key={tech}>{tech}</Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </motion.div>
         ))}
       </div>
 
