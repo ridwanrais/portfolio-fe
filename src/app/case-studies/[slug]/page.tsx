@@ -178,25 +178,36 @@ export default async function CaseStudyPage({
           <section>
             <h2 className="text-xl font-bold mb-4 tracking-tight flex items-center gap-2">
               <span className="text-[var(--muted-foreground)] opacity-50">08.</span>
-              Implementation Subsystem
+              Implementation Details
             </h2>
-            <div className="rounded-xl overflow-hidden border border-[var(--border)] mb-8">
-              <div className="bg-[#1e1e1e] px-4 py-2 text-xs font-mono text-zinc-400 border-b border-zinc-800">
-                {study.codeSnippet.title}
+            
+            {study.implementationSubsystems && study.implementationSubsystems.length > 0 && (
+              <div className="space-y-8 mt-4">
+                {study.implementationSubsystems.map((subsystem, i) => (
+                  <div key={i}>
+                    <h3 className="font-semibold text-lg text-[var(--foreground)] mb-2">{subsystem.title}</h3>
+                    <p className="text-[var(--muted-foreground)] text-sm mb-4 leading-relaxed">{subsystem.description}</p>
+                    <div className="rounded-xl overflow-hidden border border-[var(--border)]">
+                      <div className="bg-[#1e1e1e] px-4 py-2 text-xs font-mono text-zinc-400 border-b border-zinc-800">
+                        {subsystem.language === 'rust' ? 'Rust' : 'TypeScript'}
+                      </div>
+                      <SyntaxHighlighter
+                        language={subsystem.language}
+                        style={vscDarkPlus}
+                        customStyle={{
+                          margin: 0,
+                          padding: "1.5rem",
+                          fontSize: "0.875rem",
+                          backgroundColor: "#1e1e1e",
+                        }}
+                      >
+                        {subsystem.code}
+                      </SyntaxHighlighter>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <SyntaxHighlighter
-                language={study.codeSnippet.language}
-                style={vscDarkPlus}
-                customStyle={{
-                  margin: 0,
-                  padding: "1.5rem",
-                  fontSize: "0.875rem",
-                  backgroundColor: "#1e1e1e",
-                }}
-              >
-                {study.codeSnippet.code}
-              </SyntaxHighlighter>
-            </div>
+            )}
           </section>
         </FadeIn>
 

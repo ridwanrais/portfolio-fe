@@ -13,17 +13,18 @@ export interface CaseStudy {
   failureScenarios: string[];
   impact: string;
   databaseDesign: string;
-  codeSnippet: {
+  implementationSubsystems?: {
+    title: string;
     language: string;
     code: string;
-    title: string;
-  };
+    description: string;
+  }[];
 }
 
 export const caseStudies: CaseStudy[] = [
   {
     slug: "secure-payment-gateway",
-    title: "Self-Hosted Payment Gateway (PCI DSS & GDPR)",
+    title: "Self-Hosted Payment Gateway Orchestrator (PCI DSS & GDPR)",
     shortDescription: "Architected a highly secure, self-hosted payment orchestrator to maintain data sovereignty and multi-processor routing.",
     problem: "Initially, our platform was entirely dependent on Stripe, which offered limited merchant support outside of Western markets. This prevented us from expanding into high-growth regions like Indonesia where Stripe's local acceptance was poor. To scale globally, we needed to move away from vendor-specific hosted fields and implement our own orchestration layer that could route to multiple local PSPs (like Xendit) while maintaining a single, secure source of truth for card data.",
     architecture: "The solution was built around a centralized, self-hosted Card Vault that tokenizes cardholder data independently of any specific payment provider. This architectural decoupling allows us to 'vault once' and then dynamically route transactions to the most effective local processor—routing Indonesian payments through Xendit's rails while maintaining Stripe for Western transactions—all without the customer ever re-entering their data or the platform's core databases ever seeing a raw PAN.",
@@ -65,41 +66,101 @@ export const caseStudies: CaseStudy[] = [
       "Upstream PSP Outage: The payment router utilizes volume-based circuit breakers. If Stripe errors consistently, traffic is instantly redistributed to Adyen or Braintree."
     ],
     impact: "Successfully diverted 100% of payment volume across multiple processors, achieving full self-hosted PCI DSS compliance and reducing vendor fees.",
-    databaseDesign: "The main operational database structure is agnostic to payment info. A completely air-gapped PostgreSQL instance is tightly bound to the Card Vault. PANs are encrypted at rest. We utilize deterministic AES encryption so that Card Fingerprints can be queried to prevent duplicate card additions without decrypting the payload.",
-    codeSnippet: {
-      language: "typescript",
-      title: "Executing secure payment routing via orchestrator SDK",
-      code: `import { Injectable } from '@nestjs/common';
-import { PaymentOrchestratorClient } from '@payments/api';
-import { EncryptionService } from './encryption.service';
+  databaseDesign: "The main operational database structure is agnostic to payment info. A completely air-gapped PostgreSQL instance is tightly bound to the Card Vault. PANs are encrypted at rest. We utilize deterministic AES encryption so that Card Fingerprints can be queried to prevent duplicate card additions without decrypting the payload.",
+    implementationSubsystems: [
+      {
+        title: "NestJS Backend - Dynamic Split Routing",
+        description: "The Node.js backend completely avoids PCI scope by never handling raw card data. Instead, it focuses on complex business logic, dynamically routing split payments and platform fees through different payment processors (like Stripe and Xendit) before sending the opaque payload to the orchestrator.",
+        language: "typescript",
+        code: `async createPayment(request: CreatePaymentRequest): Promise<PaymentResponse> {
+  const url = \`\${this.baseUrl}/payments\`;
+  
+  // Format payload for the Rust-based orchestrator API
+  const payload = this.toSnakeCase({
+    amount: request.amount,
+    currency: request.currency,
+    customerId: request.customerId,
+    // Dynamic routing for split payments based on the upstream processor
+    splitPayments: request.splitPayments ? {
+      stripe_split_payment: request.splitPayments.stripe ? {
+        charge_type: request.splitPayments.stripe.chargeType,
+        application_fees: request.splitPayments.stripe.applicationFees,
+        transfer_account_id: request.splitPayments.stripe.transferAccountId,
+      } : undefined,
+      
+      xendit_split_payment: request.splitPayments.xendit ? {
+        for_user_id: request.splitPayments.xendit.forUserId,
+        multiple_splits: {
+          name: request.splitPayments.xendit.name,
+          routes: request.splitPayments.xendit.routes.map((route) => ({
+            flat_amount: route.flatAmount,
+            currency: route.currency,
+            // Route platform fees to CHI's master account
+            destination_account_id: route.destinationAccountId || this.config.chiAccountId,
+            percent_amount: route.percentAmount,
+          })),
+        },
+      } : undefined,
+    } : undefined,
+  });
 
-@Injectable()
-export class PaymentService {
-  constructor(
-    private orchestrator: PaymentOrchestratorClient,
-    private encryptionSvc: EncryptionService
-  ) {}
-
-  async processPayment(orderId: string, customerData: SensitiveData) {
-    // 1. Encrypt PII before it hits any DB or external logging
-    const encryptedCustomer = await this.encryptionSvc.encrypt(customerData);
-    
-    // 2. Instruct orchestrator to vault and route the payment
-    const paymentIntent = await this.orchestrator.payments.create({
-      amount: 15000, 
-      currency: 'USD',
-      customer_id: encryptedCustomer.referenceId,
-      routing_algorithm: {
-        type: "cost_optimized",
-        fallback: ["stripe", "braintree"]
-      },
-      capture_method: "automatic"
-    });
-
-    return paymentIntent.client_secret;
-  }
+  const response = await firstValueFrom(
+    this.httpService.post(url, payload, { headers: this.getHeaders() })
+  );
+  return this.mapPaymentResponse(response.data);
 }`
+      },
+      {
+        title: "Card Vault - Fingerprint Generation & Retrieval",
+        language: "rust",
+        description: "An isolated Rust microservice responsible for generating deterministic card fingerprints to prevent duplicate vault entries without exposing or decrypting the raw PAN payload.",
+        code: `/// \`/cards/fingerprint\` handling the creation and retrieval of card fingerprint
+pub async fn get_or_insert_fingerprint(
+    TenantStateResolver(tenant_app_state): TenantStateResolver,
+    Json(request): Json<types::FingerprintRequest>,
+) -> Result<Json<types::FingerprintResponse>, ContainerError<error::ApiError>> {
+    // Interacts with the isolated database to get or insert the deterministic fingerprint
+    let fingerprint = tenant_app_state
+        .db
+        .get_or_insert_fingerprint(request.data, request.key)
+        .await?;
+
+    let response = Json(fingerprint.into());
+    logger::info!(fingerprint_response=?response);
+
+    Ok(response)
+}`
+      },
+      {
+        title: "Encryption Service - GCP KMS Provider",
+        language: "rust",
+        description: "The core encryption engine implementing AES-256-GCM via GCP KMS. This abstraction securely encrypts PII before it traverses through the API Gateway or hits any persistent storage.",
+        code: `impl Crypto for GcpKmsClient {
+    fn encrypt(&self, input: StrongSecret<Vec<u8>>) -> Self::DataReturn<'_> {
+        Box::pin(async move {
+            let key_name = self.key_name().to_string();
+            let plaintext = input.peek().to_vec();
+
+            let client = self.inner_client().await.switch()?;
+
+            let request = EncryptRequest {
+                name: key_name.clone(),
+                plaintext,
+                additional_authenticated_data: vec![],
+                plaintext_crc32c: None,
+                additional_authenticated_data_crc32c: None,
+            };
+
+            let response = client.encrypt(request, None).await.map_err(|status| {
+                error_stack::report!(errors::CryptoError::EncryptionFailed("GCP KMS"))
+            })?;
+
+            Ok(StrongSecret::new(response.ciphertext))
+        })
     }
+}`
+      }
+    ]
   },
   {
     slug: "high-throughput-ticket-generation",
@@ -141,10 +202,12 @@ export class PaymentService {
     ],
     impact: "Reduced median event creation latency from 15s+ for large events to <200ms. Allowed the platform to handle 50k+ ticket generations per minute across concurrent event launches.",
     databaseDesign: "Used an index-heavy MongoDB collection for tickets, optimized for range queries. Mapped ticketDefinitionId to individual ticket records for fast lookups during the high-load ticket purchase flow.",
-    codeSnippet: {
-      language: "typescript",
-      title: "Batch ticket generation with Kafka heartbeats and sessions",
-      code: `async (payload: Payload, heartbeat: () => Promise<void>) => {
+    implementationSubsystems: [
+      {
+        title: "Ticket Batch Generator Worker",
+        description: "A Kafka consumer worker that handles massive ticket generation asynchronously. It uses MongoDB transactions for batch atomicity and emits manual heartbeats to prevent consumer group rebalances during heavy I/O.",
+        language: "typescript",
+        code: `async (payload: Payload, heartbeat: () => Promise<void>) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -174,6 +237,7 @@ export class PaymentService {
     session.endSession();
   }
 }`
-    }
+      }
+    ]
   },
 ];
